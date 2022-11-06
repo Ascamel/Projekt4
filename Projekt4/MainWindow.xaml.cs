@@ -1,7 +1,9 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,6 +16,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Color = System.Windows.Media.Color;
 
 namespace Projekt4
 {
@@ -40,13 +43,11 @@ namespace Projekt4
             }
         }
 
+
+        #region Zadanie 1
         private void TranformButtonClick(object sender, RoutedEventArgs e)
         {
             BitmapSource bitmap = (BitmapSource)MyImage.Source;
-            var topLeftColor = GetPixelColor(bitmap, 0, 0);
-            var topRightColor = GetPixelColor(bitmap, bitmap.PixelWidth - 1, 0);
-            var bottomLeftColor = GetPixelColor(bitmap, 0, bitmap.PixelHeight - 1);
-            var bottomRightColor = GetPixelColor(bitmap, bitmap.PixelWidth - 1, bitmap.PixelHeight - 1);
 
             WriteableBitmap writeableBitmap = new(bitmap);
             Int32Rect rect = new Int32Rect(0, 0, (int)bitmap.Width, (int)bitmap.Height);
@@ -56,6 +57,8 @@ namespace Projekt4
             int blue = Convert.ToInt32(BValueTextBox.Text);
 
             byte[] pixels = new byte[(int)bitmap.Width * (int)bitmap.Height * writeableBitmap.Format.BitsPerPixel / 8];
+            int stride = (writeableBitmap.PixelWidth * writeableBitmap.Format.BitsPerPixel) / 8;
+
             for (int i = 0; i<writeableBitmap.PixelHeight; i++)
             {
                 for (int j = 0; j<writeableBitmap.PixelWidth; j++)
@@ -164,15 +167,15 @@ namespace Projekt4
 
                         pixels[pixelOffset + 3] = (byte)(color.A);
                     }
-                    else if(GrayScaleButton1.IsChecked.GetValueOrDefault())
+                    else if (GrayScaleButton1.IsChecked.GetValueOrDefault())
                     {
-                        int grayScale = (int)((color.R * 0.3) + (color.G * 0.59) + (color.B * 0.11));
+                        int grayScale = (int)((color.R * 0.21) + (color.G * 0.72) + (color.B * 0.07));
                         Color nc = Color.FromArgb(color.A, (byte)grayScale, (byte)grayScale, (byte)grayScale);
 
-                        pixels[pixelOffset] = (byte)(nc.B );
-                        pixels[pixelOffset + 1] = (byte)(nc.G );
-                        pixels[pixelOffset + 2] = (byte)(nc.R );
-                        pixels[pixelOffset + 3] = (byte)(nc.A );
+                        pixels[pixelOffset] = (byte)(nc.B);
+                        pixels[pixelOffset + 1] = (byte)(nc.G);
+                        pixels[pixelOffset + 2] = (byte)(nc.R);
+                        pixels[pixelOffset + 3] = (byte)(nc.A);
                     }
                     else if (GrayScaleButton2.IsChecked.GetValueOrDefault())
                     {
@@ -188,7 +191,6 @@ namespace Projekt4
 
                 }
 
-                int stride = (writeableBitmap.PixelWidth * writeableBitmap.Format.BitsPerPixel) / 8;
                 writeableBitmap.WritePixels(rect, pixels, stride, 0);
             }
 
@@ -220,6 +222,167 @@ namespace Projekt4
             }
 
             return color;
+        }
+
+        #endregion
+
+        private void TranformButtonClick2(object sender, RoutedEventArgs e)
+        {
+            if(SmoothingButton.IsChecked.GetValueOrDefault())
+            {
+                SmoothImage();
+            }
+            else if(MedianButton.IsChecked.GetValueOrDefault())
+            {
+                MedianImage();
+            }
+            else if(SobelButton.IsChecked.GetValueOrDefault())
+            {
+
+            }
+            else if (HighPassButton.IsChecked.GetValueOrDefault())
+            {
+
+            }
+            else if (GaussButton.IsChecked.GetValueOrDefault())
+            {
+
+            }
+            else if (Mask.IsChecked.GetValueOrDefault())
+            {
+
+            }
+        }
+        public static int Median(byte[] data)
+        {
+            Array.Sort(data);
+
+            if (data.Length % 2 == 0)
+                return (data[data.Length / 2 - 1] + data[data.Length / 2]) / 2;
+            else
+                return data[data.Length / 2];
+        }
+
+        private void MedianImage()
+        {
+            BitmapSource bitmap = (BitmapSource)MyImage2.Source;
+
+            WriteableBitmap writeableBitmap = new(bitmap);
+            Int32Rect rect = new Int32Rect(0, 0, (int)bitmap.Width, (int)bitmap.Height);
+
+            byte[] pixels = new byte[(int)bitmap.Width * (int)bitmap.Height * writeableBitmap.Format.BitsPerPixel / 8];
+            int stride = (writeableBitmap.PixelWidth * writeableBitmap.Format.BitsPerPixel) / 8;
+
+            for (int i = 0; i<writeableBitmap.PixelHeight; i++)
+            {
+                for (int j = 0; j<writeableBitmap.PixelWidth; j++)
+                {
+                    int pixelOffset = (j + i * writeableBitmap.PixelWidth) * writeableBitmap.Format.BitsPerPixel/8;
+                    List<Color> colors = new();
+                    for (int k = -1; k < 2; k++)
+                    {
+                        for (int l = -1; l < 2; l++)
+                        {
+                            if (j+l < 0 || i+k < 0 || j+l >= bitmap.PixelWidth || i+k >= bitmap.PixelHeight)
+                                continue;
+
+                            colors.Add(GetPixelColor(bitmap, j+l, i+k));
+                        }
+                    }
+
+                    int r = 0, g = 0, b = 0;
+
+                    IEnumerable<byte> rArray =
+                        from value in colors
+                        select value.R;
+
+                    IEnumerable<byte> gArray =
+                        from value in colors
+                        select value.G;
+
+                    IEnumerable<byte> bArray =
+                        from value in colors
+                        select value.B;
+
+
+                    pixels[pixelOffset] = (byte)(Median(bArray.ToArray()));
+                    pixels[pixelOffset + 1] = (byte)(Median(gArray.ToArray()));
+                    pixels[pixelOffset + 2] = (byte)(Median(rArray.ToArray()));
+                    pixels[pixelOffset + 3] = (byte)(255);
+
+                }
+                writeableBitmap.WritePixels(rect, pixels, stride, 0);
+            }
+
+            MyImage2.Source = writeableBitmap;
+        }
+
+        private void SmoothImage()
+        {
+            BitmapSource bitmap = (BitmapSource)MyImage2.Source;
+
+            WriteableBitmap writeableBitmap = new(bitmap);
+            Int32Rect rect = new Int32Rect(0, 0, (int)bitmap.Width, (int)bitmap.Height);
+
+            byte[] pixels = new byte[(int)bitmap.Width * (int)bitmap.Height * writeableBitmap.Format.BitsPerPixel / 8];
+            int stride = (writeableBitmap.PixelWidth * writeableBitmap.Format.BitsPerPixel) / 8;
+
+            for (int i = 0; i<writeableBitmap.PixelHeight; i++)
+            {
+                for (int j = 0; j<writeableBitmap.PixelWidth; j++)
+                {
+                    int pixelOffset = (j + i * writeableBitmap.PixelWidth) * writeableBitmap.Format.BitsPerPixel/8;
+                    List<Color> colors = new();
+                    for (int k = -1; k < 2; k++)
+                    {
+                        for (int l = -1; l < 2; l++)
+                        {
+                            if (j+l < 0 || i+k < 0 || j+l >= bitmap.PixelWidth || i+k >= bitmap.PixelHeight)
+                                continue;
+
+                            colors.Add(GetPixelColor(bitmap, j+l, i+k));
+                        }
+                    }
+
+                    int r = 0, g = 0, b = 0;
+                    foreach (Color c in colors)
+                    {
+                        r += c.R;
+                        g += c.G;
+                        b += c.B;
+                    }
+
+                    if (colors.Count > 0)
+                    {
+                        r /= colors.Count;
+                        g /= colors.Count;
+                        b /= colors.Count;
+                    }
+
+
+                    pixels[pixelOffset] = (byte)(b);
+                    pixels[pixelOffset + 1] = (byte)(g);
+                    pixels[pixelOffset + 2] = (byte)(r);
+                    pixels[pixelOffset + 3] = (byte)(255);
+
+                }
+                writeableBitmap.WritePixels(rect, pixels, stride, 0);
+            }
+
+            MyImage2.Source = writeableBitmap;
+        }
+
+        private void LoadImageButtonClicked2(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog op = new OpenFileDialog();
+            op.Title = "Select a picture";
+            op.Filter = "All supported graphics|*.jpg;*.jpeg;*.png|" +
+              "JPEG (*.jpg;*.jpeg)|*.jpg;*.jpeg|" +
+              "Portable Network Graphic (*.png)|*.png";
+            if (op.ShowDialog() == true)
+            {
+                MyImage2.Source = new BitmapImage(new Uri(op.FileName));
+            }
         }
     }
 }
