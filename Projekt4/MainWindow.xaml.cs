@@ -20,10 +20,12 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using static System.Net.Mime.MediaTypeNames;
 using Color = System.Windows.Media.Color;
 using Encoder = System.Drawing.Imaging.Encoder;
 using Image = System.Drawing.Image;
 using Path = System.IO.Path;
+using PixelFormat = System.Drawing.Imaging.PixelFormat;
 using Rectangle = System.Drawing.Rectangle;
 
 namespace Projekt4
@@ -250,11 +252,11 @@ namespace Projekt4
             }
             else if (HighPassButton.IsChecked.GetValueOrDefault())
             {
-
+                HighPassImage();
             }
             else if (GaussButton.IsChecked.GetValueOrDefault())
             {
-
+               // GaussImage()
             }
             else if (Mask.IsChecked.GetValueOrDefault())
             {
@@ -262,6 +264,133 @@ namespace Projekt4
             }
         }
 
+        private void HighPassImage()
+        {
+            Bitmap image = new(imgPath);
+
+            Bitmap sharpenImage = new Bitmap(image.Width, image.Height);
+
+            int filterWidth = 3;
+            int filterHeight = 3;
+            int w = image.Width;
+            int h = image.Height;
+
+            double[,] filter = new double[filterWidth, filterHeight];
+
+            filter[0, 0] = filter[0, 1] = filter[0, 2] = filter[1, 0] = filter[1, 2] = filter[2, 0] = filter[2, 1] = filter[2, 2] = -1;
+            filter[1, 1] = 9;
+
+            double factor = 1.0;
+            double bias = 0.0;
+            System.Drawing.Color[,] result = new System.Drawing.Color[image.Width, image.Height];
+
+            for (int x = 0; x < w; ++x)
+            {
+                for (int y = 0; y < h; ++y)
+                {
+                    double red = 0.0, green = 0.0, blue = 0.0;
+
+                    for (int filterX = 0; filterX < filterWidth; filterX++)
+                    {
+                        for (int filterY = 0; filterY < filterHeight; filterY++)
+                        {
+                            int imageX = (x - filterWidth / 2 + filterX + w) % w;
+                            int imageY = (y - filterHeight / 2 + filterY + h) % h;
+
+                            System.Drawing.Color imageColor = image.GetPixel(imageX, imageY);
+
+
+                            red += imageColor.R * filter[filterX, filterY];
+                            green += imageColor.G * filter[filterX, filterY];
+                            blue += imageColor.B * filter[filterX, filterY];
+                        }
+                        int r = Math.Min(Math.Max((int)(factor * red + bias), 0), 255);
+                        int g = Math.Min(Math.Max((int)(factor * green + bias), 0), 255);
+                        int b = Math.Min(Math.Max((int)(factor * blue + bias), 0), 255);
+
+                        result[x, y] = System.Drawing.Color.FromArgb(r, g,b);
+                    }
+                }
+            }
+            for (int i = 0; i < w; ++i)
+            {
+                for (int j = 0; j < h; ++j)
+                {
+                    sharpenImage.SetPixel(i, j, result[i, j]);
+                }
+            }
+
+            EncoderParameters encoderParameters = new EncoderParameters(1);
+            encoderParameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 100L);
+
+            string FileName2 = Path.Combine(Environment.CurrentDirectory, @"tmp.jpg");
+
+            sharpenImage.Save(FileName2, GetEncoder(ImageFormat.Jpeg), encoderParameters);
+
+            MyImage2.Source = new BitmapImage(new Uri(FileName2));
+        }
+
+        public static Bitmap Convolve(Bitmap srcImage, double[,] kernel)
+        {
+            int width = srcImage.Width;
+            int height = srcImage.Height;
+            BitmapData srcData = srcImage.LockBits(new Rectangle(0, 0, width, height),
+                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            int bytes = srcData.Stride * srcData.Height;
+            byte[] buffer = new byte[bytes];
+            byte[] result = new byte[bytes];
+            Marshal.Copy(srcData.Scan0, buffer, 0, bytes);
+            srcImage.UnlockBits(srcData);
+            int colorChannels = 3;
+            double[] rgb = new double[colorChannels];
+            int foff = (kernel.GetLength(0) - 1) / 2;
+            int kcenter = 0;
+            int kpixel = 0;
+            for (int y = foff; y < height - foff; y++)
+            {
+                for (int x = foff; x < width - foff; x++)
+                {
+                    for (int c = 0; c < colorChannels; c++)
+                    {
+                        rgb[c] = 0.0;
+                    }
+                    kcenter = y * srcData.Stride + x * 4;
+                    for (int fy = -foff; fy <= foff; fy++)
+                    {
+                        for (int fx = -foff; fx <= foff; fx++)
+                        {
+                            kpixel = kcenter + fy * srcData.Stride + fx * 4;
+                            for (int c = 0; c < colorChannels; c++)
+                            {
+                                rgb[c] += (double)(buffer[kpixel + c]) * kernel[fy + foff, fx + foff];
+                            }
+                        }
+                    }
+                    for (int c = 0; c < colorChannels; c++)
+                    {
+                        if (rgb[c] > 255)
+                        {
+                            rgb[c] = 255;
+                        }
+                        else if (rgb[c] < 0)
+                        {
+                            rgb[c] = 0;
+                        }
+                    }
+                    for (int c = 0; c < colorChannels; c++)
+                    {
+                        result[kcenter + c] = (byte)rgb[c];
+                    }
+                    result[kcenter + 3] = 255;
+                }
+            }
+            Bitmap resultImage = new Bitmap(width, height);
+            BitmapData resultData = resultImage.LockBits(new Rectangle(0, 0, width, height),
+                ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            Marshal.Copy(result, 0, resultData.Scan0, bytes);
+            resultImage.UnlockBits(resultData);
+            return resultImage;
+        }
 
         string imgPath;
         private void SobelImage()
