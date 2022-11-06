@@ -52,8 +52,8 @@ namespace Projekt4
             Int32Rect rect = new Int32Rect(0, 0, (int)bitmap.Width, (int)bitmap.Height);
             int alpha = 0;
             int red = Convert.ToInt32(RValueTextBox.Text);
-            int green = Convert.ToInt32(GValueTextBox.Text); 
-            int blue = Convert.ToInt32(BValueTextBox.Text); 
+            int green = Convert.ToInt32(GValueTextBox.Text);
+            int blue = Convert.ToInt32(BValueTextBox.Text);
 
             byte[] pixels = new byte[(int)bitmap.Width * (int)bitmap.Height * writeableBitmap.Format.BitsPerPixel / 8];
             for (int i = 0; i<writeableBitmap.PixelHeight; i++)
@@ -62,10 +62,49 @@ namespace Projekt4
                 {
                     int pixelOffset = (j + i * writeableBitmap.PixelWidth) * writeableBitmap.Format.BitsPerPixel/8;
                     Color color = GetPixelColor(bitmap, j, i);
-                    pixels[pixelOffset] = (byte)(color.B + blue);
-                    pixels[pixelOffset + 1] = (byte)(color.G +green);
-                    pixels[pixelOffset + 2] = (byte)(color.R +red);
-                    pixels[pixelOffset + 3] = (byte)(color.A +alpha);
+
+                    if (AddButton.IsChecked.GetValueOrDefault())
+                    {
+                        pixels[pixelOffset] = (byte)(color.B + blue);
+                        pixels[pixelOffset + 1] = (byte)(color.G +green);
+                        pixels[pixelOffset + 2] = (byte)(color.R +red);
+                        pixels[pixelOffset + 3] = (byte)(color.A +alpha);
+                    }
+                    else if (RemoveButton.IsChecked.GetValueOrDefault())
+                    {
+                        pixels[pixelOffset] = (byte)(color.B - blue);
+                        pixels[pixelOffset + 1] = (byte)(color.G -green);
+                        pixels[pixelOffset + 2] = (byte)(color.R -red);
+                        pixels[pixelOffset + 3] = (byte)(color.A -alpha);
+                    }
+                    else if (MultiplicationButton.IsChecked.GetValueOrDefault())
+                    {
+                        pixels[pixelOffset] = (byte)(color.B * blue);
+                        pixels[pixelOffset + 1] = (byte)(color.G *green);
+                        pixels[pixelOffset + 2] = (byte)(color.R *red);
+                        pixels[pixelOffset + 3] = (byte)(color.A *alpha);
+                    }
+                    else if (DivideButton.IsChecked.GetValueOrDefault())
+                    {
+                        if (blue == 0)
+                            blue = 1;
+
+                        if (green == 0)
+                            green = 1;
+
+                        if (red == 0)
+                            red = 1;
+
+                        if (alpha == 0)
+                            alpha = 1;
+
+
+                        pixels[pixelOffset] = (byte)(color.B / blue);
+                        pixels[pixelOffset + 1] = (byte)(color.G /green);
+                        pixels[pixelOffset + 2] = (byte)(color.R /red);
+                        pixels[pixelOffset + 3] = (byte)(color.A /alpha);
+                    }
+
 
                 }
 

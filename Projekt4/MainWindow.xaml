@@ -18,12 +18,12 @@
                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                         <Button x:Name="LoadImageButton" Click="LoadImageButtonClicked">Load</Button>
                         <Label>Operacja</Label>
-                        <RadioButton>Dodawanie</RadioButton>
-                        <RadioButton>Odejmowanie</RadioButton>
-                        <RadioButton>Mnożenie</RadioButton>
-                        <RadioButton>Dzielenie</RadioButton>
-                        <RadioButton>Zmiana jasności</RadioButton>
-                        <RadioButton>Przejście do skali szarości</RadioButton>
+                        <RadioButton x:Name="AddButton" GroupName="Choice" IsChecked="True">Dodawanie</RadioButton>
+                        <RadioButton x:Name="RemoveButton" GroupName="Choice">Odejmowanie</RadioButton>
+                        <RadioButton x:Name="MultiplicationButton" GroupName="Choice">Mnożenie</RadioButton>
+                        <RadioButton x:Name="DivideButton" GroupName="Choice">Dzielenie</RadioButton>
+                        <RadioButton x:Name="BrightnessButton" GroupName="Choice">Zmiana jasności</RadioButton>
+                        <RadioButton x:Name="GrayScaleButton" GroupName="Choice">Przejście do skali szarości</RadioButton>
                         <Label>Wartość:</Label>
                         <Grid>
                             <Grid.ColumnDefinitions>
