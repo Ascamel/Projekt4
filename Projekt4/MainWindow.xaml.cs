@@ -197,8 +197,6 @@ namespace Projekt4
                         pixels[pixelOffset + 2] = (byte)(nc.R);
                         pixels[pixelOffset + 3] = (byte)(nc.A);
                     }
-
-
                 }
 
                 writeableBitmap.WritePixels(rect, pixels, stride, 0);
@@ -256,12 +254,55 @@ namespace Projekt4
             }
             else if (GaussButton.IsChecked.GetValueOrDefault())
             {
-               // GaussImage()
+                GaussImage();
             }
             else if (Mask.IsChecked.GetValueOrDefault())
             {
 
             }
+        }
+
+        private void GaussImage()
+        {
+            Bitmap image = new(imgPath);
+
+            Bitmap sharpenImage = Convolve(image, GaussianBlur(10,10));
+
+
+            EncoderParameters encoderParameters = new EncoderParameters(1);
+            encoderParameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 100L);
+
+            string FileName2 = Path.Combine(Environment.CurrentDirectory, @"tmp2.jpg");
+
+            sharpenImage.Save(FileName2, GetEncoder(ImageFormat.Jpeg), encoderParameters);
+
+            MyImage2.Source = new BitmapImage(new Uri(FileName2));
+        }
+
+        public static double[,] GaussianBlur(int lenght, double weight)
+        {
+            double[,] kernel = new double[lenght, lenght];
+            double kernelSum = 0;
+            int foff = (lenght - 1) / 2;
+            double distance = 0;
+            double constant = 1d / (2 * Math.PI * weight * weight);
+            for (int y = -foff; y <= foff; y++)
+            {
+                for (int x = -foff; x <= foff; x++)
+                {
+                    distance = ((y * y) + (x * x)) / (2 * weight * weight);
+                    kernel[y + foff, x + foff] = constant * Math.Exp(-distance);
+                    kernelSum += kernel[y + foff, x + foff];
+                }
+            }
+            for (int y = 0; y < lenght; y++)
+            {
+                for (int x = 0; x < lenght; x++)
+                {
+                    kernel[y, x] = kernel[y, x] * 1d / kernelSum;
+                }
+            }
+            return kernel;
         }
 
         private void HighPassImage()
