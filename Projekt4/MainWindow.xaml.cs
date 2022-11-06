@@ -65,24 +65,61 @@ namespace Projekt4
 
                     if (AddButton.IsChecked.GetValueOrDefault())
                     {
-                        pixels[pixelOffset] = (byte)(color.B + blue);
-                        pixels[pixelOffset + 1] = (byte)(color.G +green);
-                        pixels[pixelOffset + 2] = (byte)(color.R +red);
+                        if (color.B + blue > 255)
+                            pixels[pixelOffset] = 255;
+                        else
+                            pixels[pixelOffset] = (byte)(color.B + blue);
+
+                        if (color.G +green > 255)
+                            pixels[pixelOffset + 1] = 255;
+                        else
+                            pixels[pixelOffset + 1] = (byte)(color.G +green);
+
+                        if (color.R +red > 255)
+                            pixels[pixelOffset + 2] = 255;
+                        else
+                            pixels[pixelOffset + 2] = (byte)(color.R +red);
+
+
                         pixels[pixelOffset + 3] = (byte)(color.A +alpha);
                     }
                     else if (RemoveButton.IsChecked.GetValueOrDefault())
                     {
-                        pixels[pixelOffset] = (byte)(color.B - blue);
-                        pixels[pixelOffset + 1] = (byte)(color.G -green);
-                        pixels[pixelOffset + 2] = (byte)(color.R -red);
-                        pixels[pixelOffset + 3] = (byte)(color.A -alpha);
+                        if (color.B - blue < 0)
+                            pixels[pixelOffset] = 0;
+                        else
+                            pixels[pixelOffset] = (byte)(color.B - blue);
+
+                        if (color.G -green < 0)
+                            pixels[pixelOffset + 1] = 0;
+                        else
+                            pixels[pixelOffset + 1] = (byte)(color.G - green);
+
+                        if (color.R -red < 0)
+                            pixels[pixelOffset + 2] = 0;
+                        else
+                            pixels[pixelOffset + 2] = (byte)(color.R - red);
+
+                        pixels[pixelOffset + 3] = (byte)(color.A - alpha);
                     }
                     else if (MultiplicationButton.IsChecked.GetValueOrDefault())
                     {
-                        pixels[pixelOffset] = (byte)(color.B * blue);
-                        pixels[pixelOffset + 1] = (byte)(color.G *green);
-                        pixels[pixelOffset + 2] = (byte)(color.R *red);
-                        pixels[pixelOffset + 3] = (byte)(color.A *alpha);
+                        if (color.B * blue > 255)
+                            pixels[pixelOffset] = 255;
+                        else
+                            pixels[pixelOffset] = (byte)(color.B * blue);
+
+                        if (color.G *green > 255)
+                            pixels[pixelOffset + 1] = 255;
+                        else
+                            pixels[pixelOffset + 1] = (byte)(color.G * green);
+
+                        if (color.R *red > 255)
+                            pixels[pixelOffset + 2] = 255;
+                        else
+                            pixels[pixelOffset + 2] = (byte)(color.R * red);
+
+                        pixels[pixelOffset + 3] = (byte)(color.A * alpha);
                     }
                     else if (DivideButton.IsChecked.GetValueOrDefault())
                     {
@@ -100,9 +137,32 @@ namespace Projekt4
 
 
                         pixels[pixelOffset] = (byte)(color.B / blue);
-                        pixels[pixelOffset + 1] = (byte)(color.G /green);
-                        pixels[pixelOffset + 2] = (byte)(color.R /red);
-                        pixels[pixelOffset + 3] = (byte)(color.A /alpha);
+                        pixels[pixelOffset + 1] = (byte)(color.G / green);
+                        pixels[pixelOffset + 2] = (byte)(color.R / red);
+                        pixels[pixelOffset + 3] = (byte)(color.A / alpha);
+                    }
+                    else if (BrightnessButton.IsChecked.GetValueOrDefault())
+                    {
+                        int brightness = Convert.ToInt32(BrightnessValue.Text);
+
+                        if (brightness + color.B > 255)
+                            pixels[pixelOffset] = 255;
+                        else
+                            pixels[pixelOffset] = (byte)(brightness + color.B);
+
+                        if (brightness + color.G > 255)
+                            pixels[pixelOffset + 1] = 255;
+                        else
+                            pixels[pixelOffset + 1] = (byte)(brightness + color.G);
+
+                        if (brightness + color.R > 255)
+                            pixels[pixelOffset + 2] = 255;
+                        else
+                            pixels[pixelOffset + 2] = (byte)(brightness + color.R);
+
+
+
+                        pixels[pixelOffset + 3] = (byte)(color.A);
                     }
 
 

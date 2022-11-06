@@ -44,6 +44,9 @@
                             <TextBox Grid.Row="1" Grid.Column="2" x:Name="BValueTextBox">0</TextBox>
 
                         </Grid>
+
+                        <Label>Janość:</Label>
+                        <TextBox x:Name="BrightnessValue"></TextBox>
                         <Label></Label>
                         <Button x:Name="TranformButton" Click="TranformButtonClick">Przekształć</Button>
                     </StackPanel>
