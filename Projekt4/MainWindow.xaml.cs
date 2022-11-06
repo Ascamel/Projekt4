@@ -234,17 +234,21 @@ namespace Projekt4
 
         #endregion
 
+
+        #region Zadanie2
+
+        string imgPath;
         private void TranformButtonClick2(object sender, RoutedEventArgs e)
         {
-            if(SmoothingButton.IsChecked.GetValueOrDefault())
+            if (SmoothingButton.IsChecked.GetValueOrDefault())
             {
                 SmoothImage();
             }
-            else if(MedianButton.IsChecked.GetValueOrDefault())
+            else if (MedianButton.IsChecked.GetValueOrDefault())
             {
                 MedianImage();
             }
-            else if(SobelButton.IsChecked.GetValueOrDefault())
+            else if (SobelButton.IsChecked.GetValueOrDefault())
             {
                 SobelImage();
             }
@@ -262,178 +266,115 @@ namespace Projekt4
             }
         }
 
-        private void GaussImage()
+        private void SmoothImage()
         {
-            Bitmap image = new(imgPath);
+            BitmapSource bitmap = (BitmapSource)MyImage2.Source;
 
-            Bitmap sharpenImage = Convolve(image, GaussianBlur(10,10));
+            WriteableBitmap writeableBitmap = new(bitmap);
+            Int32Rect rect = new Int32Rect(0, 0, (int)bitmap.Width, (int)bitmap.Height);
 
+            byte[] pixels = new byte[(int)bitmap.Width * (int)bitmap.Height * writeableBitmap.Format.BitsPerPixel / 8];
+            int stride = (writeableBitmap.PixelWidth * writeableBitmap.Format.BitsPerPixel) / 8;
 
-            EncoderParameters encoderParameters = new EncoderParameters(1);
-            encoderParameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 100L);
-
-            string FileName2 = Path.Combine(Environment.CurrentDirectory, @"tmp2.jpg");
-
-            sharpenImage.Save(FileName2, GetEncoder(ImageFormat.Jpeg), encoderParameters);
-
-            MyImage2.Source = new BitmapImage(new Uri(FileName2));
-        }
-
-        public static double[,] GaussianBlur(int lenght, double weight)
-        {
-            double[,] kernel = new double[lenght, lenght];
-            double kernelSum = 0;
-            int foff = (lenght - 1) / 2;
-            double distance = 0;
-            double constant = 1d / (2 * Math.PI * weight * weight);
-            for (int y = -foff; y <= foff; y++)
+            for (int i = 0; i<writeableBitmap.PixelHeight; i++)
             {
-                for (int x = -foff; x <= foff; x++)
+                for (int j = 0; j<writeableBitmap.PixelWidth; j++)
                 {
-                    distance = ((y * y) + (x * x)) / (2 * weight * weight);
-                    kernel[y + foff, x + foff] = constant * Math.Exp(-distance);
-                    kernelSum += kernel[y + foff, x + foff];
-                }
-            }
-            for (int y = 0; y < lenght; y++)
-            {
-                for (int x = 0; x < lenght; x++)
-                {
-                    kernel[y, x] = kernel[y, x] * 1d / kernelSum;
-                }
-            }
-            return kernel;
-        }
-
-        private void HighPassImage()
-        {
-            Bitmap image = new(imgPath);
-
-            Bitmap sharpenImage = new Bitmap(image.Width, image.Height);
-
-            int filterWidth = 3;
-            int filterHeight = 3;
-            int w = image.Width;
-            int h = image.Height;
-
-            double[,] filter = new double[filterWidth, filterHeight];
-
-            filter[0, 0] = filter[0, 1] = filter[0, 2] = filter[1, 0] = filter[1, 2] = filter[2, 0] = filter[2, 1] = filter[2, 2] = -1;
-            filter[1, 1] = 9;
-
-            double factor = 1.0;
-            double bias = 0.0;
-            System.Drawing.Color[,] result = new System.Drawing.Color[image.Width, image.Height];
-
-            for (int x = 0; x < w; ++x)
-            {
-                for (int y = 0; y < h; ++y)
-                {
-                    double red = 0.0, green = 0.0, blue = 0.0;
-
-                    for (int filterX = 0; filterX < filterWidth; filterX++)
+                    int pixelOffset = (j + i * writeableBitmap.PixelWidth) * writeableBitmap.Format.BitsPerPixel/8;
+                    List<Color> colors = new();
+                    for (int k = -1; k < 2; k++)
                     {
-                        for (int filterY = 0; filterY < filterHeight; filterY++)
+                        for (int l = -1; l < 2; l++)
                         {
-                            int imageX = (x - filterWidth / 2 + filterX + w) % w;
-                            int imageY = (y - filterHeight / 2 + filterY + h) % h;
+                            if (j+l < 0 || i+k < 0 || j+l >= bitmap.PixelWidth || i+k >= bitmap.PixelHeight)
+                                continue;
 
-                            System.Drawing.Color imageColor = image.GetPixel(imageX, imageY);
-
-
-                            red += imageColor.R * filter[filterX, filterY];
-                            green += imageColor.G * filter[filterX, filterY];
-                            blue += imageColor.B * filter[filterX, filterY];
-                        }
-                        int r = Math.Min(Math.Max((int)(factor * red + bias), 0), 255);
-                        int g = Math.Min(Math.Max((int)(factor * green + bias), 0), 255);
-                        int b = Math.Min(Math.Max((int)(factor * blue + bias), 0), 255);
-
-                        result[x, y] = System.Drawing.Color.FromArgb(r, g,b);
-                    }
-                }
-            }
-            for (int i = 0; i < w; ++i)
-            {
-                for (int j = 0; j < h; ++j)
-                {
-                    sharpenImage.SetPixel(i, j, result[i, j]);
-                }
-            }
-
-            EncoderParameters encoderParameters = new EncoderParameters(1);
-            encoderParameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 100L);
-
-            string FileName2 = Path.Combine(Environment.CurrentDirectory, @"tmp.jpg");
-
-            sharpenImage.Save(FileName2, GetEncoder(ImageFormat.Jpeg), encoderParameters);
-
-            MyImage2.Source = new BitmapImage(new Uri(FileName2));
-        }
-
-        public static Bitmap Convolve(Bitmap srcImage, double[,] kernel)
-        {
-            int width = srcImage.Width;
-            int height = srcImage.Height;
-            BitmapData srcData = srcImage.LockBits(new Rectangle(0, 0, width, height),
-                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            int bytes = srcData.Stride * srcData.Height;
-            byte[] buffer = new byte[bytes];
-            byte[] result = new byte[bytes];
-            Marshal.Copy(srcData.Scan0, buffer, 0, bytes);
-            srcImage.UnlockBits(srcData);
-            int colorChannels = 3;
-            double[] rgb = new double[colorChannels];
-            int foff = (kernel.GetLength(0) - 1) / 2;
-            int kcenter = 0;
-            int kpixel = 0;
-            for (int y = foff; y < height - foff; y++)
-            {
-                for (int x = foff; x < width - foff; x++)
-                {
-                    for (int c = 0; c < colorChannels; c++)
-                    {
-                        rgb[c] = 0.0;
-                    }
-                    kcenter = y * srcData.Stride + x * 4;
-                    for (int fy = -foff; fy <= foff; fy++)
-                    {
-                        for (int fx = -foff; fx <= foff; fx++)
-                        {
-                            kpixel = kcenter + fy * srcData.Stride + fx * 4;
-                            for (int c = 0; c < colorChannels; c++)
-                            {
-                                rgb[c] += (double)(buffer[kpixel + c]) * kernel[fy + foff, fx + foff];
-                            }
+                            colors.Add(GetPixelColor(bitmap, j+l, i+k));
                         }
                     }
-                    for (int c = 0; c < colorChannels; c++)
+
+                    int r = 0, g = 0, b = 0;
+                    foreach (Color c in colors)
                     {
-                        if (rgb[c] > 255)
-                        {
-                            rgb[c] = 255;
-                        }
-                        else if (rgb[c] < 0)
-                        {
-                            rgb[c] = 0;
-                        }
+                        r += c.R;
+                        g += c.G;
+                        b += c.B;
                     }
-                    for (int c = 0; c < colorChannels; c++)
+
+                    if (colors.Count > 0)
                     {
-                        result[kcenter + c] = (byte)rgb[c];
+                        r /= colors.Count;
+                        g /= colors.Count;
+                        b /= colors.Count;
                     }
-                    result[kcenter + 3] = 255;
+
+
+                    pixels[pixelOffset] = (byte)(b);
+                    pixels[pixelOffset + 1] = (byte)(g);
+                    pixels[pixelOffset + 2] = (byte)(r);
+                    pixels[pixelOffset + 3] = (byte)(255);
+
                 }
+                writeableBitmap.WritePixels(rect, pixels, stride, 0);
             }
-            Bitmap resultImage = new Bitmap(width, height);
-            BitmapData resultData = resultImage.LockBits(new Rectangle(0, 0, width, height),
-                ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-            Marshal.Copy(result, 0, resultData.Scan0, bytes);
-            resultImage.UnlockBits(resultData);
-            return resultImage;
+
+            MyImage2.Source = writeableBitmap;
         }
 
-        string imgPath;
+        private void MedianImage()
+        {
+            BitmapSource bitmap = (BitmapSource)MyImage2.Source;
+
+            WriteableBitmap writeableBitmap = new(bitmap);
+            Int32Rect rect = new Int32Rect(0, 0, (int)bitmap.Width, (int)bitmap.Height);
+
+            byte[] pixels = new byte[(int)bitmap.Width * (int)bitmap.Height * writeableBitmap.Format.BitsPerPixel / 8];
+            int stride = (writeableBitmap.PixelWidth * writeableBitmap.Format.BitsPerPixel) / 8;
+
+            for (int i = 0; i<writeableBitmap.PixelHeight; i++)
+            {
+                for (int j = 0; j<writeableBitmap.PixelWidth; j++)
+                {
+                    int pixelOffset = (j + i * writeableBitmap.PixelWidth) * writeableBitmap.Format.BitsPerPixel/8;
+                    List<Color> colors = new();
+                    for (int k = -1; k < 2; k++)
+                    {
+                        for (int l = -1; l < 2; l++)
+                        {
+                            if (j+l < 0 || i+k < 0 || j+l >= bitmap.PixelWidth || i+k >= bitmap.PixelHeight)
+                                continue;
+
+                            colors.Add(GetPixelColor(bitmap, j+l, i+k));
+                        }
+                    }
+
+                    int r = 0, g = 0, b = 0;
+
+                    IEnumerable<byte> rArray =
+                        from value in colors
+                        select value.R;
+
+                    IEnumerable<byte> gArray =
+                        from value in colors
+                        select value.G;
+
+                    IEnumerable<byte> bArray =
+                        from value in colors
+                        select value.B;
+
+
+                    pixels[pixelOffset] = (byte)(Median(bArray.ToArray()));
+                    pixels[pixelOffset + 1] = (byte)(Median(gArray.ToArray()));
+                    pixels[pixelOffset + 2] = (byte)(Median(rArray.ToArray()));
+                    pixels[pixelOffset + 3] = (byte)(255);
+
+                }
+                writeableBitmap.WritePixels(rect, pixels, stride, 0);
+            }
+
+            MyImage2.Source = writeableBitmap;
+        }
+
         private void SobelImage()
         {
             Bitmap original = new(imgPath);
@@ -515,6 +456,179 @@ namespace Projekt4
             MyImage2.Source = new BitmapImage(new Uri(FileName2));
         }
 
+        private void HighPassImage()
+        {
+            Bitmap image = new(imgPath);
+
+            Bitmap sharpenImage = new Bitmap(image.Width, image.Height);
+
+            int filterWidth = 3;
+            int filterHeight = 3;
+            int w = image.Width;
+            int h = image.Height;
+
+            double[,] filter = new double[filterWidth, filterHeight];
+
+            filter[0, 0] = filter[0, 1] = filter[0, 2] = filter[1, 0] = filter[1, 2] = filter[2, 0] = filter[2, 1] = filter[2, 2] = -1;
+            filter[1, 1] = 9;
+
+            double factor = 1.0;
+            double bias = 0.0;
+            System.Drawing.Color[,] result = new System.Drawing.Color[image.Width, image.Height];
+
+            for (int x = 0; x < w; ++x)
+            {
+                for (int y = 0; y < h; ++y)
+                {
+                    double red = 0.0, green = 0.0, blue = 0.0;
+
+                    for (int filterX = 0; filterX < filterWidth; filterX++)
+                    {
+                        for (int filterY = 0; filterY < filterHeight; filterY++)
+                        {
+                            int imageX = (x - filterWidth / 2 + filterX + w) % w;
+                            int imageY = (y - filterHeight / 2 + filterY + h) % h;
+
+                            System.Drawing.Color imageColor = image.GetPixel(imageX, imageY);
+
+
+                            red += imageColor.R * filter[filterX, filterY];
+                            green += imageColor.G * filter[filterX, filterY];
+                            blue += imageColor.B * filter[filterX, filterY];
+                        }
+                        int r = Math.Min(Math.Max((int)(factor * red + bias), 0), 255);
+                        int g = Math.Min(Math.Max((int)(factor * green + bias), 0), 255);
+                        int b = Math.Min(Math.Max((int)(factor * blue + bias), 0), 255);
+
+                        result[x, y] = System.Drawing.Color.FromArgb(r, g, b);
+                    }
+                }
+            }
+            for (int i = 0; i < w; ++i)
+            {
+                for (int j = 0; j < h; ++j)
+                {
+                    sharpenImage.SetPixel(i, j, result[i, j]);
+                }
+            }
+
+            EncoderParameters encoderParameters = new EncoderParameters(1);
+            encoderParameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 100L);
+
+            string FileName2 = Path.Combine(Environment.CurrentDirectory, @"tmp.jpg");
+
+            sharpenImage.Save(FileName2, GetEncoder(ImageFormat.Jpeg), encoderParameters);
+
+            MyImage2.Source = new BitmapImage(new Uri(FileName2));
+        }
+
+        private void GaussImage()
+        {
+            Bitmap image = new(imgPath);
+
+            Bitmap sharpenImage = Convolve(image, GaussianBlur(10, 10));
+
+
+            EncoderParameters encoderParameters = new EncoderParameters(1);
+            encoderParameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 100L);
+
+            string FileName2 = Path.Combine(Environment.CurrentDirectory, @"tmp2.jpg");
+
+            sharpenImage.Save(FileName2, GetEncoder(ImageFormat.Jpeg), encoderParameters);
+
+            MyImage2.Source = new BitmapImage(new Uri(FileName2));
+        }
+
+
+
+        public static double[,] GaussianBlur(int lenght, double weight)
+        {
+            double[,] kernel = new double[lenght, lenght];
+            double kernelSum = 0;
+            int foff = (lenght - 1) / 2;
+            double distance = 0;
+            double constant = 1d / (2 * Math.PI * weight * weight);
+            for (int y = -foff; y <= foff; y++)
+            {
+                for (int x = -foff; x <= foff; x++)
+                {
+                    distance = ((y * y) + (x * x)) / (2 * weight * weight);
+                    kernel[y + foff, x + foff] = constant * Math.Exp(-distance);
+                    kernelSum += kernel[y + foff, x + foff];
+                }
+            }
+            for (int y = 0; y < lenght; y++)
+            {
+                for (int x = 0; x < lenght; x++)
+                {
+                    kernel[y, x] = kernel[y, x] * 1d / kernelSum;
+                }
+            }
+            return kernel;
+        }
+
+        public static Bitmap Convolve(Bitmap srcImage, double[,] kernel)
+        {
+            int width = srcImage.Width;
+            int height = srcImage.Height;
+            BitmapData srcData = srcImage.LockBits(new Rectangle(0, 0, width, height),
+                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            int bytes = srcData.Stride * srcData.Height;
+            byte[] buffer = new byte[bytes];
+            byte[] result = new byte[bytes];
+            Marshal.Copy(srcData.Scan0, buffer, 0, bytes);
+            srcImage.UnlockBits(srcData);
+            int colorChannels = 3;
+            double[] rgb = new double[colorChannels];
+            int foff = (kernel.GetLength(0) - 1) / 2;
+            int kcenter = 0;
+            int kpixel = 0;
+            for (int y = foff; y < height - foff; y++)
+            {
+                for (int x = foff; x < width - foff; x++)
+                {
+                    for (int c = 0; c < colorChannels; c++)
+                    {
+                        rgb[c] = 0.0;
+                    }
+                    kcenter = y * srcData.Stride + x * 4;
+                    for (int fy = -foff; fy <= foff; fy++)
+                    {
+                        for (int fx = -foff; fx <= foff; fx++)
+                        {
+                            kpixel = kcenter + fy * srcData.Stride + fx * 4;
+                            for (int c = 0; c < colorChannels; c++)
+                            {
+                                rgb[c] += (double)(buffer[kpixel + c]) * kernel[fy + foff, fx + foff];
+                            }
+                        }
+                    }
+                    for (int c = 0; c < colorChannels; c++)
+                    {
+                        if (rgb[c] > 255)
+                        {
+                            rgb[c] = 255;
+                        }
+                        else if (rgb[c] < 0)
+                        {
+                            rgb[c] = 0;
+                        }
+                    }
+                    for (int c = 0; c < colorChannels; c++)
+                    {
+                        result[kcenter + c] = (byte)rgb[c];
+                    }
+                    result[kcenter + 3] = 255;
+                }
+            }
+            Bitmap resultImage = new Bitmap(width, height);
+            BitmapData resultData = resultImage.LockBits(new Rectangle(0, 0, width, height),
+                ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            Marshal.Copy(result, 0, resultData.Scan0, bytes);
+            resultImage.UnlockBits(resultData);
+            return resultImage;
+        }
+
         public static ImageCodecInfo GetEncoder(ImageFormat format)
         {
             ImageCodecInfo[] codecs = ImageCodecInfo.GetImageDecoders();
@@ -538,116 +652,6 @@ namespace Projekt4
             else
                 return data[data.Length / 2];
         }
-
-        private void MedianImage()
-        {
-            BitmapSource bitmap = (BitmapSource)MyImage2.Source;
-
-            WriteableBitmap writeableBitmap = new(bitmap);
-            Int32Rect rect = new Int32Rect(0, 0, (int)bitmap.Width, (int)bitmap.Height);
-
-            byte[] pixels = new byte[(int)bitmap.Width * (int)bitmap.Height * writeableBitmap.Format.BitsPerPixel / 8];
-            int stride = (writeableBitmap.PixelWidth * writeableBitmap.Format.BitsPerPixel) / 8;
-
-            for (int i = 0; i<writeableBitmap.PixelHeight; i++)
-            {
-                for (int j = 0; j<writeableBitmap.PixelWidth; j++)
-                {
-                    int pixelOffset = (j + i * writeableBitmap.PixelWidth) * writeableBitmap.Format.BitsPerPixel/8;
-                    List<Color> colors = new();
-                    for (int k = -1; k < 2; k++)
-                    {
-                        for (int l = -1; l < 2; l++)
-                        {
-                            if (j+l < 0 || i+k < 0 || j+l >= bitmap.PixelWidth || i+k >= bitmap.PixelHeight)
-                                continue;
-
-                            colors.Add(GetPixelColor(bitmap, j+l, i+k));
-                        }
-                    }
-
-                    int r = 0, g = 0, b = 0;
-
-                    IEnumerable<byte> rArray =
-                        from value in colors
-                        select value.R;
-
-                    IEnumerable<byte> gArray =
-                        from value in colors
-                        select value.G;
-
-                    IEnumerable<byte> bArray =
-                        from value in colors
-                        select value.B;
-
-
-                    pixels[pixelOffset] = (byte)(Median(bArray.ToArray()));
-                    pixels[pixelOffset + 1] = (byte)(Median(gArray.ToArray()));
-                    pixels[pixelOffset + 2] = (byte)(Median(rArray.ToArray()));
-                    pixels[pixelOffset + 3] = (byte)(255);
-
-                }
-                writeableBitmap.WritePixels(rect, pixels, stride, 0);
-            }
-
-            MyImage2.Source = writeableBitmap;
-        }
-
-        private void SmoothImage()
-        {
-            BitmapSource bitmap = (BitmapSource)MyImage2.Source;
-
-            WriteableBitmap writeableBitmap = new(bitmap);
-            Int32Rect rect = new Int32Rect(0, 0, (int)bitmap.Width, (int)bitmap.Height);
-
-            byte[] pixels = new byte[(int)bitmap.Width * (int)bitmap.Height * writeableBitmap.Format.BitsPerPixel / 8];
-            int stride = (writeableBitmap.PixelWidth * writeableBitmap.Format.BitsPerPixel) / 8;
-
-            for (int i = 0; i<writeableBitmap.PixelHeight; i++)
-            {
-                for (int j = 0; j<writeableBitmap.PixelWidth; j++)
-                {
-                    int pixelOffset = (j + i * writeableBitmap.PixelWidth) * writeableBitmap.Format.BitsPerPixel/8;
-                    List<Color> colors = new();
-                    for (int k = -1; k < 2; k++)
-                    {
-                        for (int l = -1; l < 2; l++)
-                        {
-                            if (j+l < 0 || i+k < 0 || j+l >= bitmap.PixelWidth || i+k >= bitmap.PixelHeight)
-                                continue;
-
-                            colors.Add(GetPixelColor(bitmap, j+l, i+k));
-                        }
-                    }
-
-                    int r = 0, g = 0, b = 0;
-                    foreach (Color c in colors)
-                    {
-                        r += c.R;
-                        g += c.G;
-                        b += c.B;
-                    }
-
-                    if (colors.Count > 0)
-                    {
-                        r /= colors.Count;
-                        g /= colors.Count;
-                        b /= colors.Count;
-                    }
-
-
-                    pixels[pixelOffset] = (byte)(b);
-                    pixels[pixelOffset + 1] = (byte)(g);
-                    pixels[pixelOffset + 2] = (byte)(r);
-                    pixels[pixelOffset + 3] = (byte)(255);
-
-                }
-                writeableBitmap.WritePixels(rect, pixels, stride, 0);
-            }
-
-            MyImage2.Source = writeableBitmap;
-        }
-
         private void LoadImageButtonClicked2(object sender, RoutedEventArgs e)
         {
             OpenFileDialog op = new OpenFileDialog();
@@ -662,4 +666,6 @@ namespace Projekt4
             }
         }
     }
+
+    #endregion
 }
