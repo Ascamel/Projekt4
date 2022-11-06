@@ -164,6 +164,26 @@ namespace Projekt4
 
                         pixels[pixelOffset + 3] = (byte)(color.A);
                     }
+                    else if(GrayScaleButton1.IsChecked.GetValueOrDefault())
+                    {
+                        int grayScale = (int)((color.R * 0.3) + (color.G * 0.59) + (color.B * 0.11));
+                        Color nc = Color.FromArgb(color.A, (byte)grayScale, (byte)grayScale, (byte)grayScale);
+
+                        pixels[pixelOffset] = (byte)(nc.B );
+                        pixels[pixelOffset + 1] = (byte)(nc.G );
+                        pixels[pixelOffset + 2] = (byte)(nc.R );
+                        pixels[pixelOffset + 3] = (byte)(nc.A );
+                    }
+                    else if (GrayScaleButton2.IsChecked.GetValueOrDefault())
+                    {
+                        int grayScale = (int)((color.R + color.G + color.B)/3);
+                        Color nc = Color.FromArgb(color.A, (byte)grayScale, (byte)grayScale, (byte)grayScale);
+
+                        pixels[pixelOffset] = (byte)(nc.B);
+                        pixels[pixelOffset + 1] = (byte)(nc.G);
+                        pixels[pixelOffset + 2] = (byte)(nc.R);
+                        pixels[pixelOffset + 3] = (byte)(nc.A);
+                    }
 
 
                 }

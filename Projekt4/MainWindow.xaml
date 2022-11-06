@@ -23,7 +23,9 @@
                         <RadioButton x:Name="MultiplicationButton" GroupName="Choice">Mnożenie</RadioButton>
                         <RadioButton x:Name="DivideButton" GroupName="Choice">Dzielenie</RadioButton>
                         <RadioButton x:Name="BrightnessButton" GroupName="Choice">Zmiana jasności</RadioButton>
-                        <RadioButton x:Name="GrayScaleButton" GroupName="Choice">Przejście do skali szarości</RadioButton>
+                        <RadioButton x:Name="GrayScaleButton1" GroupName="Choice">Skala szarości ważona</RadioButton>
+                        <RadioButton x:Name="GrayScaleButton2" GroupName="Choice">Skala szarości średnia</RadioButton>
+
                         <Label>Wartość:</Label>
                         <Grid>
                             <Grid.ColumnDefinitions>
